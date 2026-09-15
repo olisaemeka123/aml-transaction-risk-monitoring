@@ -1,18 +1,22 @@
 with source as (
-    select * 
+
+    select *
     from {{ source('raw_transaction_risk', 'transactions') }}
+
 ),
 
 renamed as (
-    select 
+
+    select
         transaction_id,
         timestamp as transaction_ts,
         sender_account_id,
         receiver_account_id,
         amount,
         _dlt_load_id as dlt_load_id
+
     from source
+
 )
 
 select * from renamed
-

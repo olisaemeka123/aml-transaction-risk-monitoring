@@ -18,7 +18,7 @@ models:
               arguments:
                 combination_of_columns:
                   - transaction_id
-                  - role
+                  - account_role
 
           - not_null
           
@@ -30,7 +30,7 @@ models:
       - name: amount
         description: Transaction amount.
 
-      - name: role
+      - name: account_role
         description: Whether this account was the sender or receiver on this transaction.
         tests:
           - accepted_values:
@@ -51,7 +51,7 @@ models:
               arguments:
                 combination_of_columns:
                   - transaction_id
-                  - role
+                  - account_role
           - not_null
 
       - name: txn_count_last_1h
