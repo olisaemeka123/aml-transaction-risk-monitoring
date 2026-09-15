@@ -1,0 +1,128 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  DBT_PROJECT_DIR: dbt_transaction_risk_monitoring
+  GCS_STATE_PATH: gs://evocative-depot-502412-m9-dbt-state/dbt-state/manifest.json
+
+jobs:
+  dbt-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install dbt Fusion
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
+          echo $(dirname $DBT_PATH) >> $GITHUB_PATH
+
+      - name: Install dbt packages
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: dbt deps
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          echo '${{ secrets.GCP_SA_KEY }}' > ~/.dbt/gcp-key.json
+          echo "transaction_risk_analytics:" > ~/.dbt/profiles.yml
+          echo "  target: dev" >> ~/.dbt/profiles.yml
+          echo "  outputs:" >> ~/.dbt/profiles.yml
+          echo "    dev:" >> ~/.dbt/profiles.yml
+          echo "      type: bigquery" >> ~/.dbt/profiles.yml
+          echo "      threads: 16" >> ~/.dbt/profiles.yml
+          echo "      database: evocative-depot-502412-m9" >> ~/.dbt/profiles.yml
+          echo "      schema: transaction_risk_analytics" >> ~/.dbt/profiles.yml
+          echo "      method: service-account" >> ~/.dbt/profiles.yml
+          echo "      keyfile: /home/runner/.dbt/gcp-key.json" >> ~/.dbt/profiles.yml
+          echo "      location: europe-west2" >> ~/.dbt/profiles.yml
+
+      - name: Lint with sqlfluff
+        run: |
+          pip install sqlfluff sqlfluff-templater-dbt
+          sqlfluff lint ${{ env.DBT_PROJECT_DIR }}/models --dialect bigquery
+
+      - name: Check for stored production state
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: |
+          mkdir -p state
+          if gsutil -q stat ${{ env.GCS_STATE_PATH }}; then
+            gsutil cp ${{ env.GCS_STATE_PATH }} state/manifest.json
+            echo "STATE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "No stored production state found -- this must be the first run. Building in full."
+            echo "STATE_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Run dbt build (Slim CI if state exists, full build otherwise)
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: |
+          if [ "$STATE_EXISTS" = "true" ]; then
+            dbt build --select "state:modified+" --defer --state ./state
+          else
+            dbt build
+          fi
+
+  update-production-state:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install dbt Fusion
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
+          echo $(dirname $DBT_PATH) >> $GITHUB_PATH
+
+      - name: Install dbt packages
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: dbt deps
+
+      - name: Create dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          echo '${{ secrets.GCP_SA_KEY }}' > ~/.dbt/gcp-key.json
+          echo "transaction_risk_analytics:" > ~/.dbt/profiles.yml
+          echo "  target: dev" >> ~/.dbt/profiles.yml
+          echo "  outputs:" >> ~/.dbt/profiles.yml
+          echo "    dev:" >> ~/.dbt/profiles.yml
+          echo "      type: bigquery" >> ~/.dbt/profiles.yml
+          echo "      threads: 16" >> ~/.dbt/profiles.yml
+          echo "      database: evocative-depot-502412-m9" >> ~/.dbt/profiles.yml
+          echo "      schema: transaction_risk_analytics" >> ~/.dbt/profiles.yml
+          echo "      method: service-account" >> ~/.dbt/profiles.yml
+          echo "      keyfile: /home/runner/.dbt/gcp-key.json" >> ~/.dbt/profiles.yml
+          echo "      location: europe-west2" >> ~/.dbt/profiles.yml
+
+      - name: Full build on main
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: dbt build
+
+      - name: Upload new production state
+        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        run: gsutil cp target/manifest.json ${{ env.GCS_STATE_PATH }}
