@@ -99,6 +99,17 @@ jobs:
           DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
 
+      - name: Debug - inspect checked-out files
+        run: |
+          echo "GITHUB_WORKSPACE contents:"
+          ls -la
+          echo ""
+          echo "Contents of DBT_PROJECT_DIR:"
+          ls -la ${{ env.DBT_PROJECT_DIR }}
+          echo ""
+          echo "Working directory as dbt would see it:"
+          cd ${{ env.DBT_PROJECT_DIR }} && pwd && ls -la
+
       - name: Install dbt packages
         working-directory: ${{ env.DBT_PROJECT_DIR }}
         run: dbt deps
