@@ -1,0 +1,64 @@
+models:
+  - name: int_account_activity
+    description: >
+      Unions the sender and receiver perspectives of every transaction into
+      one row per role view, so an account's risk profile reflects its full
+      activity regardless of which side of a transaction it was on. This prevents duplicating aggregation logic per role
+      in every downstream rule.
+    columns:
+      - name: account_id
+        description: The account, regardless of whether it was the sender or receiver.
+        tests:
+          - not_null
+
+      - name: transaction_id
+        description: The underlying transaction. Appears twice across the model (once per role).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - transaction_id
+                  - role
+
+          - not_null
+          
+      - name: transaction_ts
+        description: When the transaction occurred.
+        tests:
+          - not_null
+
+      - name: amount
+        description: Transaction amount.
+
+      - name: role
+        description: Whether this account was the sender or receiver on this transaction.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['sender', 'receiver']
+ 
+  - name: int_account_velocity
+    description: >
+      Rolling transaction counts per account across three windows (1h/24h/7d),
+      computed via a window function over int_account_activity. 
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: transaction_id
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - transaction_id
+                  - role
+          - not_null
+
+      - name: txn_count_last_1h
+        description: Count of this account's activity (sender + receiver) in the preceding 1 hour, inclusive of this row.
+
+      - name: txn_count_last_24h
+        description: Same, over a 24 hour window.
+
+      - name: txn_count_last_7d
+        description: Same, over a 7 day window.
