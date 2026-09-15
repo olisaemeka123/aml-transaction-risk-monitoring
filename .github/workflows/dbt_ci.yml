@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  DBT_PROJECT_DIR: dbt_transaction_risk_monitoring
+  DBT_SUBDIR: dbt_transaction_risk_monitoring
   GCS_STATE_PATH: gs://evocative-depot-502412-m9-dbt-state/dbt-state/manifest.json
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
 
       - name: Install dbt packages
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: dbt deps
 
       - name: Create dbt profiles.yml
@@ -55,10 +55,10 @@ jobs:
       - name: Lint with sqlfluff
         run: |
           pip install sqlfluff sqlfluff-templater-dbt
-          sqlfluff lint ${{ env.DBT_PROJECT_DIR }}/models --dialect bigquery
+          sqlfluff lint ${{ env.DBT_SUBDIR }}/models --dialect bigquery
 
       - name: Check for stored production state
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: |
           mkdir -p state
           if gsutil -q stat ${{ env.GCS_STATE_PATH }}; then
@@ -70,7 +70,7 @@ jobs:
           fi
 
       - name: Run dbt build (Slim CI if state exists, full build otherwise)
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: |
           if [ "$STATE_EXISTS" = "true" ]; then
             dbt build --select "state:modified+" --defer --state ./state
@@ -104,14 +104,14 @@ jobs:
           echo "GITHUB_WORKSPACE contents:"
           ls -la
           echo ""
-          echo "Contents of DBT_PROJECT_DIR:"
-          ls -la ${{ env.DBT_PROJECT_DIR }}
+          echo "Contents of DBT_SUBDIR:"
+          ls -la ${{ env.DBT_SUBDIR }}
           echo ""
           echo "Working directory as dbt would see it:"
-          cd ${{ env.DBT_PROJECT_DIR }} && pwd && ls -la
+          cd ${{ env.DBT_SUBDIR }} && pwd && ls -la
 
       - name: Install dbt packages
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: dbt deps
 
       - name: Create dbt profiles.yml
@@ -131,9 +131,9 @@ jobs:
           echo "      location: europe-west2" >> ~/.dbt/profiles.yml
 
       - name: Full build on main
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: dbt build
 
       - name: Upload new production state
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
+        working-directory: ${{ env.DBT_SUBDIR }}
         run: gsutil cp target/manifest.json ${{ env.GCS_STATE_PATH }}
