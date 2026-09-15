@@ -1,0 +1,13 @@
+models:
+  - name: stg_transaction_labels
+    description: >
+      Staging model for the transaction labels source. only used in the validation model
+      that checks detection performance against ground truth. 
+  - name: transaction_id
+    description: Unique identifier for the transaction.
+  - name: is_fraud_ground_truth
+    description: Ground truth label indicating if the transaction is fraudulent.only used for evaluation purposes.
+  - name: fraud_pattern
+    description: The pattern associated with the fraud detection. used as a debugging field.
+  - name: label_sequence
+    description: Monotonically increasing position.used as a cursor for incremental extraction.

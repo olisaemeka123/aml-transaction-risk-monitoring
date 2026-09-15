@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+accounts.json
+.dlt/secrets.toml
+dbt_transaction_risk_monitoring/target/
+dbt_transaction_risk_monitoring/dbt_packages/
+dbt_transaction_risk_monitoring/logs/
+.DS_Store
+logs/

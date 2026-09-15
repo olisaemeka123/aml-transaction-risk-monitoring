@@ -1,0 +1,93 @@
+sources:
+  - name: raw_transaction_risk
+    database: evocative-depot-502412-m9
+    schema: raw_transaction_risk
+    tables:
+      - name: transactions
+        description: >
+         Raw transaction feed loaded via dlt from FastAPI simulated feed.
+         Includes both the 2,500,000 row historical backlog and any live transactions generated since.
+        config:
+          freshness:
+            warn_after: {count: 1, period: hour}
+            error_after: {count: 6, period: hour}
+          loaded_at_field: timestamp
+
+        columns:
+          - name: transaction_id
+            description: Unique transaction identifier. dlt's primary key for merge.
+            tests:
+              - unique
+              - not_null
+          - name: timestamp
+            description: When the transaction occurred. dlt's incremental extraction cursor.
+            tests:
+              - not_null
+          - name: sender_account_id
+            description: Account initiating the transaction.
+            tests:
+              - not_null
+          - name: receiver_account_id
+            description: Account receiving the transaction.
+            tests:
+              - not_null
+          - name: amount
+            description: Transaction amount.
+            tests:
+              - not_null
+          - name: _dlt_id
+            description: >
+              dlt's own generated unique row identifier, added automatically
+              to every loaded table. 
+            tests:
+              - unique
+              - not_null
+          - name: _dlt_load_id
+            description: >
+              Identifies which pipeline run (load) inserted this row. Also
+              added automatically by dlt. Carried into staging as an audit
+              column, since it lets us query row counts per load run. This shows
+              direct evidence of incremental loading behavior.
+            tests:
+              - not_null
+      - name: transaction_labels
+        description: >
+          Ground truth fraud labels, served from a separate endpoint which
+          mirrors how real fraud confirmations typically arrive later from a
+          different system (investigations, chargebacks) than the
+          transaction feed itself. Referenced only by the validation model,
+          never by detection logic.
+        columns:
+          - name: transaction_id
+            description: Matches transactions.transaction_id.
+            tests:
+              - unique
+              - not_null
+          - name: is_fraud_ground_truth
+            description: This is known only for evaluation purposes. Shows the actual answer.
+            tests:
+              - not_null
+          - name: fraud_pattern
+            description: >
+              Shows which of the 5 injected patterns produced this row, if fraudulent.
+              Kept for our own generator debugging only and not used in any detection or evaluation logic.
+          - name: sequence
+            description: >
+              showsincreasing position, stamped at generation time.
+              dlt's incremental extraction cursor for this resource, since
+              labels have no natural timestamp of their own.
+            tests:
+              - unique
+              - not_null
+          - name: _dlt_id
+            description: dlt's own generated unique row identifier. Not carried into staging.
+            tests:
+              - unique
+              - not_null
+          - name: _dlt_load_id
+            description: >
+              Identifies which pipeline run inserted this row. Documented
+              for consistency with transactions, but not carried into
+              staging as incremental loading is not relevant for this resource.
+            tests:
+              - not_null

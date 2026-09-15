@@ -1,0 +1,21 @@
+models:
+  - name: stg_transactions
+    description: >
+      Staging model for the transactions source. This model is used as a base for downstream models.
+      No business logic applied at this layer.
+    columns:
+      - name: transaction_id
+        description: Unique identifier for the transaction.
+      - name: transaction_ts
+        description: When the transaction occurred.
+      - name: sender_account_id
+        description: Account initiating the transaction.
+      - name: receiver_account_id
+        description: Account receiving the transaction.
+      - name: amount
+        description: Transaction amount.
+      - name: dlt_load_id
+        description: >
+          Which pipeline run loaded this row (renamed from dlt's
+          _dlt_load_id). used as direct evidence of incremental loading behavior over time.
+ 
