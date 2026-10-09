@@ -40,7 +40,10 @@ jobs:
           echo $PATH
           echo "--- GITHUB_PATH contents ---"
           cat $GITHUB_PATH 2>/dev/null || echo "(empty or not set)"
-          
+          echo "--- what is .local/bin/dbt? ---"
+          file /home/runner/.local/bin/dbt
+          /home/runner/.local/bin/dbt --version
+
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
         run: dbtf deps
