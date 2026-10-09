@@ -69,13 +69,13 @@ jobs:
             echo "STATE_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Run dbt build (Slim CI if state exists, full build otherwise)
+      - name: Run dbtf build (Slim CI if state exists, full build otherwise)
         working-directory: ${{ env.DBT_SUBDIR }}
         run: |
           if [ "$STATE_EXISTS" = "true" ]; then
-            dbt build --select "state:modified+" --defer --state ./state
+            dbtf build --select "state:modified+" --defer --state ./state
           else
-            dbt build
+            dbtf build
           fi
 
   update-production-state:
@@ -121,7 +121,7 @@ jobs:
 
       - name: Full build on main
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt build
+        run: dbtf build
 
       - name: Upload new production state
         working-directory: ${{ env.DBT_SUBDIR }}
