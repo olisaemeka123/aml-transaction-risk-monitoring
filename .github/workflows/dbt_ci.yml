@@ -110,10 +110,10 @@ jobs:
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
-
+          echo "DBT_FUSION_BIN=$DBT_PATH" >> $GITHUB_ENV
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt deps
+        run: $DBT_FUSION_BIN deps
 
       - name: Create dbt profiles.yml
         run: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Full build on main
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt build
+        run: $DBT_FUSION_BIN build
 
       - name: Upload new production state
         working-directory: ${{ env.DBT_SUBDIR }}
