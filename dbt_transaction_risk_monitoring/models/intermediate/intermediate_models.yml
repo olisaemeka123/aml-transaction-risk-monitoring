@@ -62,3 +62,39 @@ models:
 
       - name: txn_count_last_7d
         description: Same, over a 7 day window.
+
+  - name: int_account_amount_stats
+    description: >
+      Rolling 30 day account level transaction amount statistics (count, mean,
+      stddev) and the resulting z-score for each transaction, used to flag
+      amount outliers relative to an account's own recent history.
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: transaction_id
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - transaction_id
+                  - account_role
+          - not_null
+      - name: transaction_ts
+        tests:
+          - not_null
+      - name: amount
+        tests:
+          - not_null
+      - name: account_role
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['sender', 'receiver']
+          - not null
+
+      - name: prior_txn_count_30d
+      - name: avg_amount_30d
+      - name: stddev_amount_30d
+      - name: amount_z_score
+ 
