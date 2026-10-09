@@ -91,7 +91,7 @@ models:
           - accepted_values:
               arguments:
                 values: ['sender', 'receiver']
-          - not null
+          - not_null
 
       - name: prior_txn_count_30d
       - name: avg_amount_30d

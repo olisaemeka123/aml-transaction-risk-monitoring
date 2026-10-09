@@ -10,9 +10,9 @@ with amount_stats as (
         count(*) over (
             partition by account_id
             order by unix_seconds(transaction_ts)
-            range between 2592000 preceding and 1 preceding  -- 30d, excl current row
+            range between 2592000 preceding and 1 preceding  -- 30d in seconds
         ) as prior_txn_count_30d,
-        
+
         avg(amount) over (
             partition by account_id
             order by unix_seconds(transaction_ts)
