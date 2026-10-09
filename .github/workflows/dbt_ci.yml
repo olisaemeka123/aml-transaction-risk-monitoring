@@ -30,11 +30,27 @@ jobs:
         run: |
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
-          echo $(dirname $DBT_PATH) >> $GITHUB_PATH
+          mkdir -p $HOME/dbt-fusion-bin
+          cp "$DBT_PATH" $HOME/dbt-fusion-bin/dbt-fusion
+          chmod +x $HOME/dbt-fusion-bin/dbt-fusion
+          echo "$HOME/dbt-fusion-bin" >> $GITHUB_PATH
+          echo "DBT_FUSION_BIN=$HOME/dbt-fusion-bin/dbt-fusion" >> $GITHUB_ENV
+
+      - name: Debug dbt Fusion install
+        run: |
+          echo "--- searching for any dbt-related binary ---"
+          find $HOME -maxdepth 6 -iname "dbt*" -type f 2>/dev/null
+          echo "--- current PATH ---"
+          echo $PATH
+          echo "--- GITHUB_PATH contents ---"
+          cat $GITHUB_PATH 2>/dev/null || echo "(empty or not set)"
+          echo "--- what is .local/bin/dbt? ---"
+          file /home/runner/.local/bin/dbt
+          /home/runner/.local/bin/dbt --version
 
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt deps
+        run: $DBT_FUSION_BIN deps
 
       - name: Create dbt profiles.yml
         run: |
@@ -73,9 +89,9 @@ jobs:
         working-directory: ${{ env.DBT_SUBDIR }}
         run: |
           if [ "$STATE_EXISTS" = "true" ]; then
-            dbt build --select "state:modified+" --defer --state ./state
+            $DBT_FUSION_BIN build --select "state:modified+" --defer --state ./state
           else
-            dbt build
+            $DBT_FUSION_BIN build
           fi
 
   update-production-state:
@@ -98,10 +114,10 @@ jobs:
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
-
+          echo "DBT_FUSION_BIN=$DBT_PATH" >> $GITHUB_ENV
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt deps
+        run: $DBT_FUSION_BIN deps
 
       - name: Create dbt profiles.yml
         run: |
@@ -121,7 +137,7 @@ jobs:
 
       - name: Full build on main
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbt build
+        run: $DBT_FUSION_BIN build
 
       - name: Upload new production state
         working-directory: ${{ env.DBT_SUBDIR }}
