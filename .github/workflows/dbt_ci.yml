@@ -29,7 +29,7 @@ jobs:
       - name: Install dbt Fusion
         run: |
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
-          DBT_PATH=$(find $HOME -maxdepth 5 -name dbtf -type f 2>/dev/null | head -n1)
+          DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
 
       - name: Debug dbt Fusion install
@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbtf deps
+        run: dbt deps
 
       - name: Create dbt profiles.yml
         run: |
@@ -81,13 +81,13 @@ jobs:
             echo "STATE_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Run dbtf build (Slim CI if state exists, full build otherwise)
+      - name: Run dbt build (Slim CI if state exists, full build otherwise)
         working-directory: ${{ env.DBT_SUBDIR }}
         run: |
           if [ "$STATE_EXISTS" = "true" ]; then
-            dbtf build --select "state:modified+" --defer --state ./state
+            dbt build --select "state:modified+" --defer --state ./state
           else
-            dbtf build
+            dbt build
           fi
 
   update-production-state:
@@ -108,12 +108,12 @@ jobs:
       - name: Install dbt Fusion
         run: |
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
-          DBT_PATH=$(find $HOME -maxdepth 5 -name dbtf -type f 2>/dev/null | head -n1)
+          DBT_PATH=$(find $HOME -maxdepth 5 -name dbt -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
 
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbtf deps
+        run: dbt deps
 
       - name: Create dbt profiles.yml
         run: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Full build on main
         working-directory: ${{ env.DBT_SUBDIR }}
-        run: dbtf build
+        run: dbt build
 
       - name: Upload new production state
         working-directory: ${{ env.DBT_SUBDIR }}
