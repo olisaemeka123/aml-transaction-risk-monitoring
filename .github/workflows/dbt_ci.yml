@@ -86,7 +86,8 @@ jobs:
           fi
 
       - name: Run dbt build (Slim CI if state exists, full build otherwise)
-        working-directory: ${{ env.DBT_SUBDIR }}        run: |
+        working-directory: ${{ env.DBT_SUBDIR }}
+        run: |
           if [ "$STATE_EXISTS" = "true" ]; then
             $DBT_FUSION_BIN build --select "state:modified+" --defer --state ./state
           else
