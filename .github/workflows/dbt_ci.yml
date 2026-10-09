@@ -32,6 +32,15 @@ jobs:
           DBT_PATH=$(find $HOME -maxdepth 5 -name dbtf -type f 2>/dev/null | head -n1)
           echo $(dirname $DBT_PATH) >> $GITHUB_PATH
 
+      - name: Debug dbt Fusion install
+        run: |
+          echo "--- searching for any dbt-related binary ---"
+          find $HOME -maxdepth 6 -iname "dbt*" -type f 2>/dev/null
+          echo "--- current PATH ---"
+          echo $PATH
+          echo "--- GITHUB_PATH contents ---"
+          cat $GITHUB_PATH 2>/dev/null || echo "(empty or not set)"
+          
       - name: Install dbt packages
         working-directory: ${{ env.DBT_SUBDIR }}
         run: dbtf deps
