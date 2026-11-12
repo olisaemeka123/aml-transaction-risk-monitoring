@@ -1,4 +1,3 @@
-
 with ranked as (
 
     select
