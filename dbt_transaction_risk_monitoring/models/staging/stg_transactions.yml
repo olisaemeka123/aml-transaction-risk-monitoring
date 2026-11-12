@@ -10,8 +10,20 @@ models:
         description: When the transaction occurred.
       - name: sender_account_id
         description: Account initiating the transaction.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id
+
       - name: receiver_account_id
         description: Account receiving the transaction.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id
+              
       - name: amount
         description: Transaction amount.
       - name: dlt_load_id

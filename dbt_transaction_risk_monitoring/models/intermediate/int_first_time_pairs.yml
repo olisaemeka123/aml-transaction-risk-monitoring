@@ -4,7 +4,10 @@ models:
       One row per transaction, flagging whether it is the first time the
       sender has paid this receiver. Ties on timestamp are
       broken by transaction_id so exactly one transaction per pair is
-      flagged. 
+      flagged.The synthetic generator picks counterparties at
+      random, so ~99.99% of transactions (fraud and non-fraud alike) are
+      flagged as first-time pairs. The flag has no standalone discriminating
+      power on this data and is intended as a supporting signal only. 
     columns:
       - name: transaction_id
         tests:

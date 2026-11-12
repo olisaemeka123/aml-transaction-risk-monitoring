@@ -11,7 +11,7 @@ import uuid
 # Countries considered high-risk for the jurisdiction detection rule.
 # Deliberately fictional codes rather than real country names -- this avoids
 # implying any real nation is AML-risk in a public GitHub repo. This list
-# MUST match the dbt seed (seeds/high_risk_countries.csv) exactly, or the
+# MUST match the dbt seed (seeds/jurisdictions.csv) exactly, or the
 # jurisdiction rule will silently never fire.
 HIGH_RISK_COUNTRIES = ["ZX", "ZY", "ZZ"]
 NORMAL_COUNTRIES = ["GB", "US", "DE", "FR", "IE", "NL", "CA", "AU"]
