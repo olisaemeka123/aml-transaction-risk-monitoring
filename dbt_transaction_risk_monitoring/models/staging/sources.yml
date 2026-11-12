@@ -91,3 +91,17 @@ sources:
               staging as incremental loading is not relevant for this resource.
             tests:
               - not_null
+
+      - name: accounts
+        description: >
+          contains account id & country code
+        columns:
+          - name: account_id
+            description: Unique account identifier. Matches sender_account_id and receiver_account_id in transactions.
+            tests:
+              - unique
+              - not_null
+          - name: country
+            description: Country code for the account.
+            tests:
+              - not_null
