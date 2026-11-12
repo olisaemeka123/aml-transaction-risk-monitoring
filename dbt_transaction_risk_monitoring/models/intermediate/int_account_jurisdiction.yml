@@ -1,0 +1,16 @@
+models:
+  - name: int_account_jurisdiction
+    description: >
+      One row per account with its country and whether that country is
+      classified high-risk in the jurisdictions seed. 
+    columns:
+      - name: account_id
+        tests:
+          - unique
+          - not_null
+      - name: country
+        tests:
+          - not_null
+      - name: is_high_risk_country
+        tests:
+          - not_null
