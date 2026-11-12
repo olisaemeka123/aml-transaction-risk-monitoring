@@ -1,0 +1,12 @@
+country_code,is_high_risk
+GB,false
+US,false
+DE,false
+FR,false
+IE,false
+NL,false
+CA,false
+AU,false
+ZX,true
+ZY,true
+ZZ,true

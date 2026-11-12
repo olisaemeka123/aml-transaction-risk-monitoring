@@ -1,0 +1,9 @@
+models:
+  - name: stg_accounts
+    columns:
+      - name: country
+        tests:
+          - relationships:
+              arguments:
+                to: ref('jurisdictions')
+                field: country_code
