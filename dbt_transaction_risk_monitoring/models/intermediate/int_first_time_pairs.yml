@@ -1,0 +1,27 @@
+models:  
+  - name: int_first_time_pairs
+    description: >
+      One row per transaction, flagging whether it is the first time the
+      sender has paid this receiver. Ties on timestamp are
+      broken by transaction_id so exactly one transaction per pair is
+      flagged. 
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+          - unique
+      - name: transaction_ts
+        tests:
+          - not_null
+      - name: sender_account_id
+        tests:
+          - not_null
+      - name: receiver_account_id
+        tests:
+          - not_null
+      - name: pair_txn_sequence
+        tests:
+          - not_null
+      - name: is_first_time_pair
+        tests:
+          - not_null
