@@ -1,7 +1,8 @@
 """dlt pipeline: pulls transactions and their (separately-served) ground
-truth labels from the FastAPI feed into BigQuery raw tables.
+truth labels from the FastAPI feed into BigQuery raw tables, and loads the
+static account pool from accounts.json.
 
-Two resources, two different incremental strategies, deliberately:
+Three resources, deliberately different loading strategies:
 
 - transactions: cursor-based on `timestamp`. dlt remembers the maximum
   timestamp seen across ALL previous runs (dlt.sources.incremental), and
@@ -14,16 +15,24 @@ Two resources, two different incremental strategies, deliberately:
   field -- proof that dlt's incremental tracking isn't tied to timestamps
   specifically, just to any value that only increases over time.
 
+- accounts: a static pool (account_id, country) read from accounts.json.
+  It never changes between runs, so it is fully replaced on each run
+  instead of appended.
+
 Requires the API (main.py) to already be running on API_BASE before this
 executes -- it does not start the API itself.
 
 Run with: python3 pipeline.py
 """
+import json
+from pathlib import Path
+
 import dlt
 import requests
 
 API_BASE = "http://127.0.0.1:8000"
 PAGE_SIZE = 5000
+ACCOUNTS_FILE = Path(__file__).parent / "accounts.json"
 
 
 @dlt.resource(name="transactions", primary_key="transaction_id", write_disposition="append")
@@ -74,15 +83,31 @@ def labels_resource(
             break
 
 
+@dlt.resource(
+    name="accounts",
+    primary_key="account_id",
+    write_disposition="replace",
+)
+def accounts_resource():
+    """Loads the static account pool (account_id, country).
+
+    The pool never changes between runs, so each run replaces the table
+    in full. Append would duplicate all rows on every rerun."""
+    with open(ACCOUNTS_FILE) as f:
+        yield json.load(f)
+
+
 def run():
     pipeline = dlt.pipeline(
         pipeline_name="transaction_risk_pipeline",
         destination="bigquery",
         dataset_name="raw_transaction_risk",
     )
-    load_info = pipeline.run([transactions_resource(), labels_resource()])
+    load_info = pipeline.run(
+        [transactions_resource(), labels_resource(), accounts_resource()]
+    )
     print(load_info)
 
 
 if __name__ == "__main__":
-    run()
+    run() 
