@@ -1,0 +1,36 @@
+
+models:
+  - name: mart_detection_summary
+    description: >
+      Single-row summary of detection performance across all labelled
+      transactions: confusion matrix, precision, recall and false-positive
+      rate.
+    columns:
+      - name: true_positives
+        description: Fraud transactions that were flagged.
+        data_tests:
+          - not_null
+
+      - name: false_positives
+        description: Normal transactions that were flagged.
+        data_tests:
+          - not_null
+
+      - name: false_negatives
+        description: Fraud transactions that were missed.
+        data_tests:
+          - not_null
+
+      - name: true_negatives
+        description: Normal transactions that were not flagged.
+        data_tests:
+          - not_null
+
+      - name: precision_rate
+        description: Share of flagged transactions that were fraud.
+
+      - name: recall_rate
+        description: Share of fraud transactions that were flagged.
+
+      - name: false_positive_rate
+        description: Share of normal transactions that were flagged.
