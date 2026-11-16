@@ -1,0 +1,25 @@
+models:
+  - name: mart_detection_by_tier
+    description: >
+      Fraud share by number of detection rules triggered. Shows that alerts
+      with more rules triggered are more likely to be fraud, which supports
+      triaging by rules_triggered. 
+    columns:
+      - name: rules_triggered
+        description: Number of detection rules that fired (0 to 3).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: txn_count
+        description: Labelled transactions in this tier.
+        data_tests:
+          - not_null
+
+      - name: fraud_count
+        description: Transactions in this tier that are fraud.
+        data_tests:
+          - not_null
+
+      - name: fraud_share
+        description: fraud_count divided by txn_count.
