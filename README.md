@@ -1,6 +1,6 @@
 # AML Transaction Risk Monitoring Pipeline
 
-An end-to-end analytics engineering project that ingests a live transaction feed, models it in dbt, applies rule-based AML detection logic, and **validates the detection rules against ground-truth fraud labels**.
+An analytics engineering project that ingests a live transaction feed, models it in dbt, applies rule based AML detection logic, and **validates the detection rules against fraud labels**.
 
 **Stack:** Python (FastAPI generator, dlt) · BigQuery · dbt Fusion · GitHub Actions (CI) · sqlfluff
 
@@ -74,20 +74,19 @@ flowchart LR
 
 `int_first_time_pairs` is built and tested but not used by the detection rules (see Known limitations).
 
-- **Generator (FastAPI):** serves a live feed of synthetic transactions with ground-truth fraud labels. Five fraud patterns are planted: `structuring`, `outlier`, `jurisdiction`, `new_payee_high_value`, `velocity`.
-- **Ingestion (dlt):** `append` with an incremental cursor for transactions (timestamp) and labels (sequence number); `replace` for the static 100,000-account pool so re-runs never duplicate rows.
+- **Generator (FastAPI):** serves a live feed of synthetic transactions with fraud labels. Five fraud patterns are planted: `structuring`, `outlier`, `jurisdiction`, `new_payee_high_value`, `velocity`.
+- **Ingestion (dlt):** `append` with an incremental cursor for transactions (timestamp) and labels (sequence number); `replace` for the static 100,000-account pool. I designed it this way so reruns never duplicate rows.
 - **dbt layers:**
   - **Staging:** `stg_transactions`, `stg_transaction_labels`, `stg_accounts`
-  - **Intermediate** (facts and metrics only, no verdicts): `int_account_activity`, `int_account_velocity`, `int_account_amount_stats`, `int_first_time_pairs`, `int_account_jurisdiction`
-  - **Marts** (thresholds and verdicts): `mart_transaction_risk`, `mart_detection_by_pattern`, `mart_detection_summary`
-- **Seed:** `jurisdictions.csv` maps country codes to a high-risk flag, so adding a high-risk country needs no SQL change.
-
+  - **Intermediate**: `int_account_activity`, `int_account_velocity`, `int_account_amount_stats`, `int_first_time_pairs`, `int_account_jurisdiction`
+  - **Marts** : `mart_transaction_risk`, `mart_detection_by_pattern`, `mart_detection_summary`
+- **Seed:** `jurisdictions.csv` maps country codes to a high-risk flag.
 ## Design decisions
 
 - **Intermediate models compute facts; marts apply thresholds.** Velocity counts and z-scores are measurements. What counts as "suspicious" is decided once, in `mart_transaction_risk`.
-- **Thresholds are dbt vars** (`dbt_project.yml`), so rules can be retuned or overridden with `--vars` without editing SQL.
+- **Thresholds are dbt vars** (`dbt_project.yml`), so rules can be overridden with `--vars` without editing SQL.
 - **Ground-truth labels are isolated.** They appear only in `stg_transaction_labels` and the two validation marts. The detection mart never reads them.
-- **Trust rule on the z-score.** The z-score is only used when an account has at least 5 prior transactions in 30 days, because a baseline built on one or two points is unreliable.
+- **Trust rule on the z-score.** The z-score is only used when an account has at least 5 prior transactions in 30 days.  This is a design decision because a baseline built on one or two points is unreliable.
 - **Tests on every layer** (unique, not_null, relationships, accepted_values), and **CI** runs sqlfluff lint and a dbt build on every pull request.
 
 ## Detection rules
@@ -102,7 +101,7 @@ A transaction is flagged if any rule fires. `rules_triggered` (0 to 3) is the tr
 
 ### How the thresholds were chosen
 
-Thresholds were picked from measured flag rates on normal versus fraudulent traffic, not by guesswork:
+Thresholds were picked from measured flag rates on normal versus fraudulent traffic:
 
 | Candidate rule | Flagged among normal | Notes |
 |---|---|---|
@@ -112,7 +111,6 @@ Thresholds were picked from measured flag rates on normal versus fraudulent traf
 | z-score >= 20 | 0.19% | jurisdiction catch rate falls from 74% to 65% |
 | high-risk country + z >= 3 | 1.03% | lifts jurisdiction catch rate from 74% to 80% |
 
-z >= 10 is the knee of the curve: it cuts false positives by two thirds versus z >= 5 at almost no cost in recall, while z >= 20 starts losing real fraud.
 
 ### Results by fraud pattern
 
@@ -126,18 +124,16 @@ z >= 10 is the knee of the curve: it cuts false positives by two thirds versus z
 
 ## Known limitations
 
-These were measured, not assumed, and are the main avenues for improvement:
+These zre mostly due to design decisions and are the main avenues for improvement:
 
 1. **First-time sender/receiver pair is not a useful signal on this data.** The generator picks counterparties at random, so about 99.99% of both fraud and normal transactions are first-time pairs. The model (`int_first_time_pairs`) is correct and kept, but it is not used in the detection rules.
-2. **Structuring is only partially caught (35%).** These transactions sit in a tight band just under 10,000 (9,000 to 9,950), but no dedicated signal exists. The coverage that exists comes from incidental velocity and z-score hits. A proximity-to-reporting-threshold signal is the obvious next step.
-3. **Cold-start accounts cause about 90% of the missed fraud.** Of the 1,157 missed outlier, jurisdiction and new-payee frauds, 1,042 were on accounts with fewer than 5 prior transactions, where the z-score is deliberately not used. A fallback rule using absolute amounts for thin-history accounts would address this.
-4. **Low precision at the whole-rule-set level (14%).** This is driven by the 0.4% base rate and is handled by ranking on `rules_triggered`, not by tightening the thresholds.
-5. **Synthetic data separates too cleanly.** Fraud amounts are far above normal amounts by construction, which flatters the amount-based rules. Real data would show more overlap.
-6. **No out-of-sample test.** Thresholds were chosen using the same labels used for the final scoring. On real data these would be tuned on one period and validated on another.
-7. **Jurisdiction is a weak signal alone.** About 19% of normal transactions involve a high-risk account, so it only works as a modifier alongside an amount signal.
-8. **Counts drift.** The generator is a live feed, so re-running the pipeline pulls new transactions and row counts grow slightly. Figures here are a snapshot.
+2. **Structuring is only partially caught (35%).** These transactions sit in a tight band just under 10,000 (9,000 to 9,950), but no dedicated signal exists. The coverage that exists comes from incidental velocity and z-score hits. Adding a dedicated signal would improve the model.
+3. **Cold-start accounts cause about 90% of the missed fraud.** Of the 1,157 missed outlier, jurisdiction and new-payee frauds, 1,042 were on accounts with fewer than 5 prior transactions, where the z-score is deliberately not used. Using the 5-prior transaction rule was a design decision. To improve this, I'll add a fallback rule using absolute amounts for accounts which do not have a long history.
+4. **Low precision rate on a whole (14%).** This is driven by the 0.4% base rate and is handled by ranking on `rules_triggered`, not by tightening the thresholds.
+5. **Jurisdiction is a weak signal alone.** About 19% of normal transactions involve a high-risk account, so it only works as a modifier alongside an amount signal.
+6. **Counts drift.** The generator is a live feed, so re-running the pipeline pulls new transactions and row counts grow slightly. Figures here are a snapshot.
 
-## Possible next steps
+## Improvements
 
 - Structuring signal: amount as a fraction of the reporting threshold (a dbt var), combined with repeat behaviour in a time window
 - Cold-start fallback rule for accounts with thin history
