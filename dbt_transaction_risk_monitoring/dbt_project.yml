@@ -22,3 +22,9 @@ models:
       +materialized: view
     marts:
       +materialized: table
+
+vars:
+  velocity_1h_threshold: 3
+  min_prior_txns: 5
+  amount_z_threshold: 10
+  jurisdiction_z_threshold: 3

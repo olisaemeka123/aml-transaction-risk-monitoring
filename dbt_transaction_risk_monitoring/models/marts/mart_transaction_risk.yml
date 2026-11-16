@@ -1,0 +1,27 @@
+
+models:
+  - name: mart_transaction_risk
+    description: >
+      One row per transaction with the detection signals, the rules that
+      fired (thresholds set as vars in dbt_project.yml), the number of rules
+      triggered, and a flag.
+    columns:
+      - name: transaction_id
+        description: Unique identifier for the transaction.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: rules_triggered
+        description: Number of detection rules that fired (0 to 3).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1, 2, 3]
+                quote: false
+
+      - name: is_flagged
+        description: True when at least one detection rule fired.
+        data_tests:
+          - not_null
