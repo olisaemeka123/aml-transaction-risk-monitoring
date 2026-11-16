@@ -1,0 +1,34 @@
+
+models:
+  - name: mart_detection_by_pattern
+    description: >
+      Detection performance per fraud pattern. 
+      Uses ground-truth labels for validation only.
+    columns:
+      - name: fraud_pattern
+        description: Fraud pattern from the labels, or normal.
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - normal
+                  - structuring
+                  - outlier
+                  - jurisdiction
+                  - new_payee_high_value
+                  - velocity
+
+      - name: txn_count
+        description: Labelled transactions in this pattern.
+        data_tests:
+          - not_null
+
+      - name: flagged_count
+        description: How many of them were flagged by the detection rules.
+        data_tests:
+          - not_null
+
+      - name: flag_rate
+        description: flagged_count divided by txn_count.
